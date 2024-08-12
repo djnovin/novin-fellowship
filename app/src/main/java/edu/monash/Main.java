@@ -10,10 +10,12 @@ public class Main {
     private static final Logger logger = LoggerSingleton.getLogger();
     private final Fellowship fellowship;
     private final Labyrinth labyrinth;
+    private final Scanner scanner;
 
-    public Main(Fellowship fellowship, Labyrinth labyrinth) {
+    public Main(Fellowship fellowship, Labyrinth labyrinth, Scanner scanner) {
         this.fellowship = fellowship;
         this.labyrinth = labyrinth;
+        this.scanner = scanner;
     }
 
     public void run() {
@@ -46,69 +48,58 @@ public class Main {
     }
 
     private void selectFellowshipMembers() {
-        try (Scanner scanner = new Scanner(System.in)) {
-            logger.info("Please select up to 4 members for your Fellowship.");
-            logger.info("The first member must be a Hobbit (leader). The rest can be Elves or Dwarves.");
+        logger.info("Please select up to 4 members for your Fellowship.");
+        logger.info("The first member must be a Hobbit (leader). The rest can be Elves or Dwarves.");
 
-            logger.info("Enter the name of your Hobbit leader:");
-            if (scanner.hasNextLine()) {
-                String hobbitName = scanner.nextLine();
-                Member hobbit = new Hobbit(hobbitName);
-                fellowship.addMember(hobbit);
-            } else {
-                throw new NoSuchElementException("No input provided for Hobbit leader.");
+        logger.info("Enter the name of your Hobbit leader:");
+        String hobbitName = readLine();
+        Member hobbit = new Hobbit(hobbitName);
+        fellowship.addMember(hobbit);
+
+        int i = 1;
+        boolean done = false;
+        while (i < 4 && !done) {
+            logger.info("Choose a member type (Elf/Dwarf) or type 'done' to finish selection:");
+            String type = readLine().toLowerCase();
+
+            if (type.equals("done")) {
+                done = true;
+                continue;  // Continue to the end of the loop
             }
 
-            int i = 1;
-            boolean done = false;
-            while (i < 4 && !done) {
-                logger.info("Choose a member type (Elf/Dwarf) or type 'done' to finish selection:");
-                if (!scanner.hasNextLine()) {
-                    throw new NoSuchElementException("No input provided for member type.");
-                }
-                String type = scanner.nextLine().toLowerCase();
+            logger.info("Enter the name of your " + type + ":");
+            String name = readLine();
+            Member member = null;
 
-                if (type.equals("done")) {
-                    done = true;
-                    continue;  // Continue to the end of the loop
-                }
-
-                logger.info("Enter the name of your " + type + ":");
-                if (!scanner.hasNextLine()) {
-                    throw new NoSuchElementException("No input provided for member name.");
-                }
-                String name = scanner.nextLine();
-                Member member = null;
-
-                switch (type) {
-                    case "elf" -> member = new Elf(name);
-                    case "dwarf" -> member = new Dwarf(name);
-                    default -> {
-                        logger.warning("Invalid member type. Please choose 'Elf' or 'Dwarf'.");
-                        continue;  // Skip incrementing i and retry the loop
-                    }
-                }
-
-                if (member != null) {
-                    fellowship.addMember(member);
-                    i++;
+            switch (type) {
+                case "elf" -> member = new Elf(name);
+                case "dwarf" -> member = new Dwarf(name);
+                default -> {
+                    logger.warning("Invalid member type. Please choose 'Elf' or 'Dwarf'.");
+                    continue;  // Skip incrementing i and retry the loop
                 }
             }
-        } catch (NoSuchElementException e) {
-            logger.severe("Input error: " + e.getMessage());
-            System.out.println("Error: " + e.getMessage());
+
+            if (member != null) {
+                fellowship.addMember(member);
+                i++;
+            }
         }
     }
 
+    private String readLine() {
+        if (scanner.hasNextLine()) {
+            return scanner.nextLine();
+        } else {
+            throw new NoSuchElementException("No input available.");
+        }
+    }
 
     private void loadLabyrinth() throws IOException {
         try {
             logger.info("Loading labyrinth...");
-            
             String path = System.getProperty("user.dir");
-
             String filePath = path + "/app/src/main/resources/labyrinth.txt";
-
             labyrinth.loadFromFile(filePath);
             logger.info("Labyrinth loaded successfully.");
             labyrinth.logLabyrinthStructure();
@@ -119,48 +110,42 @@ public class Main {
     }
 
     private void navigateLabyrinth() {
-        try (Scanner scanner = new Scanner(System.in)) {
-            Cave currentCave = labyrinth.getStartingCave();
+        Cave currentCave = labyrinth.getStartingCave();
 
-            while (true) {
-                logger.log(Level.INFO, "You are currently in cave {0}", currentCave.getId());
-                logger.info("Choose a direction to move (north, east, south, west):");
+        while (true) {
+            logger.log(Level.INFO, "You are currently in cave {0}", currentCave.getId());
+            logger.info("Choose a direction to move (north, east, south, west):");
 
-                if (!scanner.hasNextLine()) {
-                    throw new NoSuchElementException("No input available for direction.");
+            String direction = readLine().toLowerCase();
+            Cave nextCave = null;
+
+            switch (direction) {
+                case "north" -> nextCave = currentCave.getNorth();
+                case "east" -> nextCave = currentCave.getEast();
+                case "south" -> nextCave = currentCave.getSouth();
+                case "west" -> nextCave = currentCave.getWest();
+                default -> {
+                    logger.warning("Invalid direction. Please choose 'north', 'east', 'south', or 'west'.");
+                    continue;
                 }
+            }
 
-                String direction = scanner.nextLine().toLowerCase();
-                Cave nextCave = null;
+            if (nextCave == null) {
+                logger.warning("You cannot move in that direction.");
+            } else {
+                currentCave = nextCave;
+                if (currentCave.getCreature() != null) {
+                    Creature creature = currentCave.getCreature();
+                    logger.log(Level.INFO, "You encounter a {0}!", creature.getName());
 
-                switch (direction) {
-                    case "north" -> nextCave = currentCave.getNorth();
-                    case "east" -> nextCave = currentCave.getEast();
-                    case "south" -> nextCave = currentCave.getSouth();
-                    case "west" -> nextCave = currentCave.getWest();
-                    default -> {
-                        logger.warning("Invalid direction. Please choose 'north', 'east', 'south', or 'west'.");
-                        continue;
-                    }
-                }
+                    Member member = fellowship.getMembers().get(0);
+                    member.attack(creature);
 
-                if (nextCave == null) {
-                    logger.warning("You cannot move in that direction.");
-                } else {
-                    currentCave = nextCave;
-                    if (currentCave.getCreature() != null) {
-                        Creature creature = currentCave.getCreature();
-                        logger.log(Level.INFO, "You encounter a {0}!", creature.getName());
-
-                        Member member = fellowship.getMembers().get(0);
-                        member.attack(creature);
-
-                        if (!creature.isAlive()) {
-                            logger.log(Level.INFO, "The {0} has been defeated!", creature.getName());
-                            currentCave.setCreature(null);
-                        } else {
-                            logger.log(Level.INFO, "The {0} is still alive!", creature.getName());
-                        }
+                    if (!creature.isAlive()) {
+                        logger.log(Level.INFO, "The {0} has been defeated!", creature.getName());
+                        currentCave.setCreature(null);
+                    } else {
+                        logger.log(Level.INFO, "The {0} is still alive!", creature.getName());
                     }
                 }
             }
@@ -168,13 +153,12 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        LoggerSingleton.getLogger();
+        try (Scanner scanner = new Scanner(System.in)) {
+            Fellowship fellowship = new Fellowship();
+            Labyrinth labyrinth = new Labyrinth();
 
-        Fellowship fellowship = new Fellowship();
-        Labyrinth labyrinth = new Labyrinth();
-
-        Main game = new Main(fellowship, labyrinth);
-
-        game.run();
+            Main game = new Main(fellowship, labyrinth, scanner);
+            game.run();
+        }
     }
 }
