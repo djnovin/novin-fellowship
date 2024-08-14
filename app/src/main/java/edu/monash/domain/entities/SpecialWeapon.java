@@ -1,7 +1,8 @@
 package edu.monash.domain.entities;
 
 /**
- * Represents a special weapon that can be used once by a member of the Fellowship.
+ * Represents a special weapon that can be used once by a member of the
+ * Fellowship.
  * When used, this weapon will guarantee a win in combat.
  */
 public class SpecialWeapon {

@@ -5,10 +5,14 @@ import java.util.List;
 
 /**
  * The Fellowship class represents the group of members on the quest.
+ * 
  * It manages the members, checks their status, and selects members for actions.
  */
 public class Fellowship {
 
+    /**
+     * The list of members in the Fellowship.
+     */
     private final List<Member> members;
 
     /**
@@ -19,7 +23,7 @@ public class Fellowship {
     }
 
     /**
-     * Adds a member to the Fellowship.
+     * Adds a member to the Fellowship if there is space.
      * 
      * @param member The member to be added.
      * @return true if the member was added, false if the Fellowship is full.
@@ -35,12 +39,16 @@ public class Fellowship {
     }
 
     /**
-     * Removes a member from the Fellowship.
+     * Removes a member from the Fellowship if they are present.
      * 
      * @param member The member to be removed.
      */
     public void removeMember(Member member) {
-        members.remove(member);
+        if (members.contains(member)) {
+            members.remove(member);
+
+            System.out.println(member.getName() + " has left the Fellowship.");
+        }
     }
 
     /**
@@ -49,7 +57,11 @@ public class Fellowship {
      * @return A list of members.
      */
     public List<Member> getMembers() {
-        return new ArrayList<>(members); // Return a copy to avoid external modification
+        if (members.isEmpty()) {
+            System.out.println("The Fellowship is empty.");
+        }
+
+        return new ArrayList<>(members);
     }
 
     /**

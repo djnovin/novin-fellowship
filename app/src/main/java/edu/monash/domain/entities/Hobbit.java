@@ -8,6 +8,11 @@ public class Hobbit extends Member {
 
     private final SpecialWeapon specialWeapon;
 
+    /**
+     * Constructs a Hobbit with the specified name.
+     *
+     * @param name The name of the Hobbit.
+     */
     public Hobbit(String name) {
         super(name, HOBBIT_POWER);
         this.specialWeapon = new SpecialWeapon();

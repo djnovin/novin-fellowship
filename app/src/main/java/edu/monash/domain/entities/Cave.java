@@ -2,7 +2,8 @@ package edu.monash.domain.entities;
 
 /**
  * Represents a cave in the labyrinth.
- * A cave can have connections to neighboring caves (north, east, south, west) and may contain a creature.
+ * A cave can have connections to neighboring caves (north, east, south, west)
+ * and may contain a creature.
  */
 public class Cave {
     private final int id;
@@ -137,5 +138,18 @@ public class Cave {
      */
     public boolean hasCreature() {
         return creature != null;
+    }
+
+    public String getDirectionTo(Cave cave) {
+        if (cave == north) {
+            return "north";
+        } else if (cave == east) {
+            return "east";
+        } else if (cave == south) {
+            return "south";
+        } else if (cave == west) {
+            return "west";
+        }
+        return null;
     }
 }

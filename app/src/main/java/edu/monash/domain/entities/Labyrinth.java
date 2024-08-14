@@ -5,7 +5,8 @@ import java.util.Map;
 
 /**
  * Represents a labyrinth consisting of interconnected caves.
- * This class is part of the domain layer and contains the core logic for managing the labyrinth's structure.
+ * This class is part of the domain layer and contains the core logic for
+ * managing the labyrinth's structure.
  */
 public class Labyrinth {
     private final Map<Integer, Cave> caves;

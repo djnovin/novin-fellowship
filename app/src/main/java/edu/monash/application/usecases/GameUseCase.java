@@ -1,5 +1,6 @@
 package edu.monash.application.usecases;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 
@@ -19,7 +20,6 @@ public class GameUseCase {
     private static final String ERROR_INVALID_MEMBER_TYPE = "Invalid member type. Please choose 'Elf' or 'Dwarf' or type 'done' to finish selection:";
     private static final String ERROR_EMPTY_NAME = "Name cannot be empty. Please enter a name:";
     private static final String ERROR_DUPLICATE_NAME = "A member with that name already exists. Please choose a different name.";
-    private static final String MESSAGE_SELECT_AT_LEAST_ONE = "At least one member must be selected. Please continue selecting members.";
     private static final int MAX_MEMBERS = 4;
 
     private final ConsoleOutputAdapter outputAdapter;
@@ -136,27 +136,16 @@ public class GameUseCase {
                 break;
             }
 
-            // Ask the user to choose a direction to move
-            outputAdapter.displayMessage("Choose a direction to move (north, east, south, west):");
-            String direction = promptForValidInput("",
-                    "Invalid direction. Please choose 'north', 'east', 'south', or 'west'.");
-
-            Optional<Cave> nextCave = navigationService.move(currentCave, direction);
-
-            if (nextCave.isPresent()) {
-                currentCave = nextCave.get();
-
-                // Only check for a creature after a successful move
-                if (navigationService.checkForCreature(fellowship, currentCave)) {
-                    handleCombat(fellowship, currentCave);
-                } else {
-                    // Recover points if no creature is present
-                    fellowship.recoverDamagePoints();
-                    outputAdapter.displayMessage("The Fellowship has recovered some strength.");
-                }
-            } else {
-                outputAdapter.displayMessage("You can't move in that direction. Try again.");
+            // Check for creatures and handle combat if necessary
+            if (navigationService.checkForCreature(fellowship, currentCave)) {
+                handleCombat(fellowship, currentCave);
             }
+
+            // After combat or if no creatures, handle navigation to the next cave
+            currentCave = handlePostCombatNavigation(fellowship, currentCave);
+
+            // Display cave status after events
+            displayCaveStatus();
         }
 
         displayFinalSummary(fellowship);
@@ -218,6 +207,89 @@ public class GameUseCase {
         }
     }
 
+    private Cave handlePostCombatNavigation(Fellowship fellowship, Cave currentCave) {
+        // Determine if the Fellowship has the code
+        boolean fellowshipHasCode = fellowship.getMembers().stream().anyMatch(Member::getHasCode);
+
+        // Allow the player to choose the next cave
+        if (fellowshipHasCode) {
+            outputAdapter.displayMessage("You have the secret code. You may proceed to Mount Api.");
+        } else {
+            outputAdapter.displayMessage("You must retrieve the secret code before proceeding to Mount Api.");
+
+            Cave caveWithCode = navigationService.findCaveWithCode();
+
+            outputAdapter.displayMessage("Cave with code: " + caveWithCode);
+
+            if (caveWithCode != null) {
+                outputAdapter
+                        .displayMessage("Navigating back to cave " + caveWithCode.getId() + " to retrieve the code.");
+                return caveWithCode;
+            }
+        }
+
+        if (fellowshipHasCode) {
+            return navigationService.getCaveById(100);
+        }
+
+        return chooseNextCave(currentCave);
+    }
+
+    private Optional<Cave> getNextCave(Cave currentCave, String direction) {
+        return navigationService.getAvailableCaves(currentCave).stream()
+                .filter(c -> direction.equalsIgnoreCase(currentCave.getDirectionTo(c)))
+                .findFirst();
+    }
+
+    private Cave chooseNextCave(Cave currentCave) {
+        List<Cave> availableCaves = navigationService.getAvailableCaves(currentCave);
+
+        // Check if Mount Api (cave ID 100) is an available option
+        Optional<Cave> mountApiCave = availableCaves.stream().filter(c -> c.getId() == 100).findFirst();
+        if (mountApiCave.isPresent()) {
+            outputAdapter.displayMessage("Mount Api is available. Automatically proceeding to Mount Api (Cave 100).");
+            return mountApiCave.get();
+        }
+
+        if (availableCaves.size() == 1) {
+            outputAdapter.displayMessage(
+                    "Only one cave available. Automatically entering cave " + availableCaves.get(0).getId());
+            return availableCaves.get(0);
+        }
+
+        // Prompt the user to choose a direction if there are multiple options
+        while (true) {
+            outputAdapter.displayMessage("Choose a direction to move (north, east, south, west):");
+            String direction = scanner.nextLine().trim().toLowerCase();
+
+            Optional<Cave> nextCave = getNextCave(currentCave, direction);
+            if (nextCave.isPresent()) {
+                return nextCave.get();
+            } else {
+                outputAdapter.displayMessage("Invalid direction. Please choose 'north', 'east', 'south', or 'west'.");
+            }
+        }
+    }
+
+    private void displayCaveStatus() {
+        outputAdapter.displayMessage("Caves visited:");
+        List<Cave> visitedCaves = navigationService.getVisitedCaves();
+        for (Cave cave : visitedCaves) {
+            String creatureStatus = cave.getCreature() != null ? "Creature present: " + cave.getCreature().getName()
+                    : "No creature";
+            outputAdapter.displayMessage("Cave " + cave.getId() + ": " + creatureStatus);
+        }
+
+        outputAdapter.displayMessage("Current creature status:");
+        visitedCaves.stream()
+                .filter(cave -> cave.getCreature() != null)
+                .forEach(cave -> outputAdapter.displayMessage("Creature " + cave.getCreature().getName()
+                        + " holding the code: " + cave.getCreature().getHasCode()
+                        + " Damage points: " + cave.getCreature().getDamagePoints()));
+
+        outputAdapter.displayMessage("Next cave to enter: ");
+    }
+
     private boolean checkWinCondition(Cave currentCave) {
         return currentCave.getId() == 100;
     }
@@ -228,6 +300,49 @@ public class GameUseCase {
 
     private void displayFinalSummary(Fellowship fellowship) {
         outputAdapter.displayMessage("Game Over!");
+
+        boolean questSuccessful = checkWinCondition(navigationService.getCurrentCave());
+
+        if (questSuccessful) {
+            outputAdapter.displayMessage("Outcome: The quest was successful! The Fellowship delivered the code.");
+        } else {
+            outputAdapter.displayMessage("Outcome: The quest failed. The Fellowship did not deliver the code.");
+        }
+
+        // Display the creature that delivered the code, if any
+        Member codeBearer = fellowship.getMembers().stream()
+                .filter(Member::getHasCode)
+                .findFirst()
+                .orElse(null);
+
+        if (codeBearer != null) {
+            outputAdapter.displayMessage("The code was delivered by: " + codeBearer.getName());
+        } else {
+            outputAdapter.displayMessage("No creature delivered the code.");
+        }
+
+        List<Cave> visitedCaves = navigationService.getVisitedCaves();
+        outputAdapter.displayMessage("Number of caves visited: " + visitedCaves.size());
+
+        int codeChanges = navigationService.getCodeChangeCount();
+        outputAdapter.displayMessage("Number of times the secret code changed hands: " + codeChanges);
+
+        List<String> deadCreatures = navigationService.getDeadCreatures();
+
+        if (deadCreatures.isEmpty()) {
+            outputAdapter.displayMessage("No creatures died during the quest.");
+        } else {
+            outputAdapter.displayMessage("List of creatures that died:");
+            deadCreatures.forEach(creatureName -> outputAdapter.displayMessage(" - " + creatureName));
+        }
+
+        int totalFights = combatService.getTotalFights();
+        int fightsWon = combatService.getFightsWon();
+
+        double successRate = totalFights > 0 ? (double) fightsWon * 100 / totalFights : 0;
+
+        outputAdapter.displayMessage("Fellowship fight success rate: " + String.format("%.2f", successRate) + "%");
+
         outputAdapter.displayMessage("Final Status of Fellowship:");
         fellowship.displayStatus();
 
