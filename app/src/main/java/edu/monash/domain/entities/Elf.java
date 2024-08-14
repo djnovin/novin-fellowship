@@ -7,7 +7,7 @@ public class Elf extends Member {
     private final SpecialWeapon specialWeapon;
 
     public Elf(String name) {
-        super(name, 5, 10); // Power = 5, Health = 10
+        super(name, 5, 10, 10);
         this.specialWeapon = new SpecialWeapon();
     }
 
@@ -19,10 +19,16 @@ public class Elf extends Member {
                 creature.takeDamage(creature.getHealth()); // Always wins the fight
                 return true;
             } else {
-                return getPower() > creature.getPower();
+                int damage = getPower();
+                creature.takeDamage(damage);
+
+                // Check if the creature was defeated after taking damage
+                if (!creature.isAlive()) {
+                    return true; // Return true if the creature was defeated
+                }
             }
         }
-        return false;
+        return false; // Return false if the creature was not defeated
     }
 
     @Override

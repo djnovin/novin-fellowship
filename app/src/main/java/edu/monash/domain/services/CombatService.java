@@ -14,41 +14,44 @@ public class CombatService {
         this.random = new Random();
     }
 
-    public boolean executeCombat(Member member, Creature creature, boolean hasCode) {
+    public boolean executeCombat(Member member, Creature creature, boolean memberHasCode) {
         if (member.hasSpecialWeapon()) {
             member.useSpecialWeapon();
             creature.takeDamage(creature.getHealth()); // Creature is instantly defeated
-            return resolveFightOutcome(member, creature, hasCode, true);
+            handleCombatOutcome(member, creature, memberHasCode, true);
+            return true;
         }
 
         int powerDifference = member.getPower() - creature.getPower();
         int winProbability = calculateWinProbability(powerDifference);
 
-        if (random.nextInt(100) < winProbability) {
+        boolean memberWon = random.nextInt(100) < winProbability;
+        if (memberWon) {
             creature.takeDamage(creature.getHealth()); // Creature is defeated
-            return resolveFightOutcome(member, creature, hasCode, true);
         } else {
             member.takeDamage(4); // Member takes damage if they lose
-            return resolveFightOutcome(member, creature, hasCode, false);
         }
+
+        handleCombatOutcome(member, creature, memberHasCode, memberWon);
+        return memberWon;
     }
 
-    private boolean resolveFightOutcome(Character winner, Character loser, boolean hadCode, boolean memberWon) {
-        winner.takeDamage(-1); // Winner heals slightly
-
-        if (loser.isAlive()) {
-            loser.takeDamage(4); // Loser takes additional damage
-        } else {
-            loser.takeDamage(loser.getHealth()); // Ensure they are dead
-        }
-
-        // Handle code transfer
-        if (hadCode) {
+    private void handleCombatOutcome(Character winner, Character loser, boolean memberHadCode, boolean memberWon) {
+        if (memberWon && memberHadCode) {
             winner.setHasCode(true);
             loser.setHasCode(false);
+        } else if (!memberWon && memberHadCode) {
+            loser.setHasCode(true);
+            winner.setHasCode(false);
         }
 
-        return memberWon;
+        if (winner instanceof Member) {
+            winner.takeDamage(-1); // Winner heals slightly (gains 1 health point)
+        }
+
+        if (!loser.isAlive()) {
+            loser.takeDamage(loser.getHealth()); // Ensure the loser is marked as dead
+        }
     }
 
     private int calculateWinProbability(int powerDifference) {
@@ -63,7 +66,7 @@ public class CombatService {
         } else if (powerDifference == 0) {
             return 50;
         } else {
-            return 0;
+            return 10; // Assume 10% chance if powerDifference is negative
         }
     }
 }

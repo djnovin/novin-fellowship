@@ -124,15 +124,10 @@ public class GameUseCase {
     }
 
     private void playGame(Fellowship fellowship) {
-        Cave currentCave = navigationService.getStartedInCave();
+        Cave currentCave = navigationService.getStartingCave();
 
         while (true) {
             outputAdapter.displayMessage("You are currently in cave " + currentCave.getId());
-
-            // Check for creatures in the current cave
-            if (navigationService.checkForCreature(fellowship, currentCave)) {
-                handleCombat(fellowship, currentCave);
-            }
 
             // Check if the Fellowship has reached Mount Api
             if (checkWinCondition(currentCave)) {
@@ -156,6 +151,11 @@ public class GameUseCase {
 
             if (nextCave.isPresent()) {
                 currentCave = nextCave.get();
+
+                // Only check for a creature after a successful move
+                if (navigationService.checkForCreature(fellowship, currentCave)) {
+                    handleCombat(fellowship, currentCave);
+                }
             } else {
                 outputAdapter.displayMessage("You can't move in that direction. Try again.");
             }
@@ -165,8 +165,30 @@ public class GameUseCase {
     }
 
     private void handleCombat(Fellowship fellowship, Cave currentCave) {
-        // Logic for selecting a member to fight
         Member selectedMember = selectMemberForCombat(fellowship);
+
+        // Prompt to use special weapon if available
+        if (selectedMember.hasSpecialWeapon()) {
+            outputAdapter.displayMessage(
+                    selectedMember.getName() + " has a special weapon! Do you want to use it? (yes/no)");
+
+            String useWeapon = scanner.nextLine().trim().toLowerCase();
+
+            if (!useWeapon.equals("yes") && !useWeapon.equals("no")) {
+                outputAdapter.displayMessage("Invalid input. Please enter 'yes' or 'no'.");
+                return;
+            }
+
+            if (useWeapon.equals("yes")) {
+                selectedMember.useSpecialWeapon();
+                outputAdapter.displayMessage(selectedMember.getName() + " used the special weapon and defeated the "
+                        + currentCave.getCreature().getName() + "!");
+                currentCave.getCreature().takeDamage(currentCave.getCreature().getHealth()); // Creature is defeated
+                return;
+            }
+        }
+
+        // Regular combat if no weapon used
         boolean memberWins = combatService.executeCombat(selectedMember, currentCave.getCreature(),
                 selectedMember.hasCode());
 
@@ -206,6 +228,7 @@ public class GameUseCase {
         outputAdapter.displayMessage("Game Over!");
         outputAdapter.displayMessage("Final Status of Fellowship:");
         fellowship.displayStatus();
-        // Add more summary details here if needed
+
+        outputAdapter.displayMessage("Thank you for playing!");
     }
 }

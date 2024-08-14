@@ -4,10 +4,14 @@ package edu.monash.domain.entities;
  * Represents a Hobbit member of the Fellowship, who has a special weapon.
  */
 public class Hobbit extends Member {
+    private static final int HOBBIT_POWER = 3;
+    private static final int HOBBIT_HEALTH = 10;
+    private static final int HOBBIT_MAX_HEALTH = 10;
+
     private final SpecialWeapon specialWeapon;
 
     public Hobbit(String name) {
-        super(name, 3, 10); // Power = 3, Health = 10
+        super(name, HOBBIT_POWER, HOBBIT_HEALTH, HOBBIT_MAX_HEALTH);
         this.specialWeapon = new SpecialWeapon();
     }
 
@@ -19,7 +23,10 @@ public class Hobbit extends Member {
                 creature.takeDamage(creature.getHealth()); // Always wins the fight
                 return true;
             } else {
-                return getPower() > creature.getPower();
+
+                int damage = getPower();
+
+                creature.takeDamage(damage);
             }
         }
         return false;
