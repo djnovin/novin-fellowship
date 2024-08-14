@@ -3,8 +3,6 @@ package edu.monash.domain.entities;
 import java.util.ArrayList;
 import java.util.List;
 
-import edu.monash.domain.interfaces.MemberSelectionStrategy;
-
 /**
  * The Fellowship class represents the group of members on the quest.
  * It manages the members, checks their status, and selects members for actions.
@@ -22,6 +20,7 @@ public class Fellowship {
 
     /**
      * Adds a member to the Fellowship.
+     * 
      * @param member The member to be added.
      * @return true if the member was added, false if the Fellowship is full.
      */
@@ -37,6 +36,7 @@ public class Fellowship {
 
     /**
      * Removes a member from the Fellowship.
+     * 
      * @param member The member to be removed.
      */
     public void removeMember(Member member) {
@@ -45,6 +45,7 @@ public class Fellowship {
 
     /**
      * Gets the list of members in the Fellowship.
+     * 
      * @return A list of members.
      */
     public List<Member> getMembers() {
@@ -53,19 +54,32 @@ public class Fellowship {
 
     /**
      * Checks if the Fellowship is still alive.
+     * 
      * @return true if at least one member is alive, false otherwise.
      */
     public boolean isFellowshipAlive() {
-        return members.stream().anyMatch(Member::isAlive);
+        return members.stream().anyMatch(member -> !member.getIsDead());
     }
 
     /**
-     * Selects a member to fight based on a selection strategy.
-     * @param strategy The strategy used to select a member.
-     * @return The selected member.
+     * Selects a member for a fight.
+     * 
+     * @param memberName The name of the member to be selected.
+     * @return The selected member if found, otherwise null.
      */
-    public Member selectMemberForFight(MemberSelectionStrategy strategy) {
-        return strategy.selectMember(members);
+    public Member selectMemberForFight(String memberName) {
+        return members.stream()
+                .filter(member -> member.getName().equalsIgnoreCase(memberName))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Recovers damage points for all members in the Fellowship when no creatures
+     * are present.
+     */
+    public void recoverDamagePoints() {
+        members.forEach(Member::recoverPoints);
     }
 
     /**
@@ -73,7 +87,7 @@ public class Fellowship {
      */
     public void displayStatus() {
         System.out.println("Fellowship status:");
-        members.forEach(member -> 
-            System.out.println(member.getName() + " - Health: " + member.getHealth() + ", Power: " + member.getPower()));
+        members.forEach(member -> System.out.println(member.getName() + " - Power: " + member.getPower() +
+                ", Damage Points: " + member.getDamagePoints() + ", Has Code: " + member.getHasCode()));
     }
 }

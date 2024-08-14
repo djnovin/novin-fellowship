@@ -16,8 +16,9 @@ public class CombatService {
 
     public boolean executeCombat(Member member, Creature creature, boolean memberHasCode) {
         if (member.hasSpecialWeapon()) {
+            // Member uses special weapon, creature is instantly killed
             member.useSpecialWeapon();
-            creature.takeDamage(creature.getHealth()); // Creature is instantly defeated
+            creature.setDamagePoints(10); // Creature dies
             handleCombatOutcome(member, creature, memberHasCode, true);
             return true;
         }
@@ -26,10 +27,13 @@ public class CombatService {
         int winProbability = calculateWinProbability(powerDifference);
 
         boolean memberWon = random.nextInt(100) < winProbability;
+
         if (memberWon) {
-            creature.takeDamage(creature.getHealth()); // Creature is defeated
+            // Member wins, creature accumulates damage points
+            creature.setDamagePoints(creature.getDamagePoints() + 10); // Creature is defeated
         } else {
-            member.takeDamage(4); // Member takes damage if they lose
+            // Creature wins, member accumulates damage points
+            member.setDamagePoints(member.getDamagePoints() + 4);
         }
 
         handleCombatOutcome(member, creature, memberHasCode, memberWon);
@@ -38,19 +42,23 @@ public class CombatService {
 
     private void handleCombatOutcome(Character winner, Character loser, boolean memberHadCode, boolean memberWon) {
         if (memberWon && memberHadCode) {
+            // Member retains the code
             winner.setHasCode(true);
             loser.setHasCode(false);
         } else if (!memberWon && memberHadCode) {
+            // Creature steals the code from the member
             loser.setHasCode(true);
             winner.setHasCode(false);
         }
 
         if (winner instanceof Member) {
-            winner.takeDamage(-1); // Winner heals slightly (gains 1 health point)
+            // Winning member recovers slightly
+            winner.setDamagePoints(Math.max(winner.getDamagePoints() - 1, 0)); // Ensure no negative damage points
         }
 
-        if (!loser.isAlive()) {
-            loser.takeDamage(loser.getHealth()); // Ensure the loser is marked as dead
+        // If the loser has 10 or more damage points, they die
+        if (loser.getDamagePoints() >= 10) {
+            loser.setIsDead(true);
         }
     }
 

@@ -20,14 +20,15 @@ public class GameUseCase {
     private static final String ERROR_EMPTY_NAME = "Name cannot be empty. Please enter a name:";
     private static final String ERROR_DUPLICATE_NAME = "A member with that name already exists. Please choose a different name.";
     private static final String MESSAGE_SELECT_AT_LEAST_ONE = "At least one member must be selected. Please continue selecting members.";
+    private static final int MAX_MEMBERS = 4;
 
     private final ConsoleOutputAdapter outputAdapter;
     private final NavigationService navigationService;
     private final CombatService combatService;
-    private final Scanner scanner; // Keep a single Scanner instance
+    private final Scanner scanner;
 
     public GameUseCase(ConsoleOutputAdapter outputAdapter, NavigationService navigationService,
-            CombatService combatService, Scanner scanner) { // Pass the Scanner to the constructor
+            CombatService combatService, Scanner scanner) {
         this.outputAdapter = outputAdapter;
         this.navigationService = navigationService;
         this.combatService = combatService;
@@ -57,8 +58,8 @@ public class GameUseCase {
     }
 
     private void addOtherMembers(Fellowship fellowship) {
-        int memberCount = 0;
-        while (true) {
+        int memberCount = 1; // 1 because Hobbit leader is already added
+        while (memberCount < MAX_MEMBERS) {
             String type = promptForValidInput(PROMPT_MEMBER_TYPE, ERROR_INVALID_MEMBER_TYPE);
 
             if (isDoneSelection(type, memberCount)) {
@@ -86,14 +87,7 @@ public class GameUseCase {
     }
 
     private boolean isDoneSelection(String type, int memberCount) {
-        if (type.equalsIgnoreCase("done")) {
-            if (memberCount > 0) {
-                return true;
-            } else {
-                outputAdapter.displayMessage(MESSAGE_SELECT_AT_LEAST_ONE);
-            }
-        }
-        return false;
+        return type.equalsIgnoreCase("done") && memberCount >= 2;
     }
 
     private boolean isInvalidMemberType(String type) {
@@ -102,7 +96,7 @@ public class GameUseCase {
 
     private String promptForValidInput(String prompt, String errorMessage) {
         outputAdapter.displayMessage(prompt);
-        String input = scanner.nextLine().trim(); // Use the shared Scanner
+        String input = scanner.nextLine().trim();
         while (input.isEmpty()) {
             outputAdapter.displayMessage(errorMessage);
             outputAdapter.displayMessage(prompt);
@@ -155,6 +149,10 @@ public class GameUseCase {
                 // Only check for a creature after a successful move
                 if (navigationService.checkForCreature(fellowship, currentCave)) {
                     handleCombat(fellowship, currentCave);
+                } else {
+                    // Recover points if no creature is present
+                    fellowship.recoverDamagePoints();
+                    outputAdapter.displayMessage("The Fellowship has recovered some strength.");
                 }
             } else {
                 outputAdapter.displayMessage("You can't move in that direction. Try again.");
@@ -183,28 +181,32 @@ public class GameUseCase {
                 selectedMember.useSpecialWeapon();
                 outputAdapter.displayMessage(selectedMember.getName() + " used the special weapon and defeated the "
                         + currentCave.getCreature().getName() + "!");
-                currentCave.getCreature().takeDamage(currentCave.getCreature().getHealth()); // Creature is defeated
+                currentCave.getCreature().setIsDead(true); // Creature is defeated
                 return;
             }
         }
 
         // Regular combat if no weapon used
         boolean memberWins = combatService.executeCombat(selectedMember, currentCave.getCreature(),
-                selectedMember.hasCode());
+                selectedMember.getHasCode());
 
         if (memberWins) {
             outputAdapter.displayMessage(
                     selectedMember.getName() + " defeated the " + currentCave.getCreature().getName() + "!");
+            selectedMember.setDamagePoints(selectedMember.getDamagePoints() + 1); // Increase damage points for the
+                                                                                  // winner
         } else {
             outputAdapter.displayMessage(
                     selectedMember.getName() + " was defeated by the " + currentCave.getCreature().getName() + "!");
+            selectedMember.setDamagePoints(selectedMember.getDamagePoints() + 4); // Increase damage points for the
+                                                                                  // loser
         }
     }
 
     private Member selectMemberForCombat(Fellowship fellowship) {
         while (true) {
             outputAdapter.displayMessage("Choose a member to fight (enter the member's name):");
-            String memberName = scanner.nextLine().trim(); // Use the shared Scanner
+            String memberName = scanner.nextLine().trim();
             Optional<Member> memberOpt = fellowship.getMembers().stream()
                     .filter(m -> m.getName().equalsIgnoreCase(memberName)).findFirst();
 

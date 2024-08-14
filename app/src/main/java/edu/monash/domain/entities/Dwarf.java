@@ -7,15 +7,7 @@ package edu.monash.domain.entities;
 public class Dwarf extends Member {
 
     public Dwarf(String name) {
-        super(name, 7, 12, 12);
-    }
-
-    @Override
-    public boolean attack(Character target) {
-        if (target instanceof Creature creature) {
-            return getPower() > creature.getPower();
-        }
-        return false;
+        super(name, 7);
     }
 
     @Override

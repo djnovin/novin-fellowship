@@ -52,8 +52,8 @@ public class NavigationService {
     public boolean checkForCreature(Fellowship fellowship, Cave currentCave) {
         Creature creature = currentCave.getCreature();
 
-        // If no creature is in the cave, we may randomly assign one
-        if (creature == null && random.nextFloat() <= 0.75f) { // 75% chance of encountering a creature
+        // 75% chance of a creature appearing if none is already present
+        if (creature == null && random.nextFloat() <= 0.75f) {
             creature = createRandomCreature();
             currentCave.setCreature(creature);
             logger.log(Level.INFO, "A {0} has appeared in Cave {1}!",
@@ -66,7 +66,7 @@ public class NavigationService {
 
             // Handle the creature encounter, initiate combat
             Member chosenMember = selectMemberForFight(fellowship);
-            boolean memberHasCode = chosenMember.hasCode();
+            boolean memberHasCode = chosenMember.getHasCode();
             boolean memberWon = combatService.executeCombat(chosenMember, creature, memberHasCode);
 
             if (memberWon) {
@@ -82,8 +82,8 @@ public class NavigationService {
 
             // Fellowship members recover if no creatures are present
             fellowship.getMembers().forEach(member -> {
-                if (member.getHealth() > 0) {
-                    member.takeDamage(-1); // Decrease damage, effectively healing the member
+                if (member.getDamagePoints() > 0) {
+                    member.recoverPoints();
                 }
             });
 
@@ -91,28 +91,8 @@ public class NavigationService {
         }
     }
 
-    public boolean handleCreatureEncounter(Fellowship fellowship, Cave currentCave) {
-        Creature creature = currentCave.getCreature();
-        if (creature != null) {
-            // Handle the creature encounter, initiate combat
-            Member chosenMember = selectMemberForFight(fellowship);
-            boolean memberHasCode = chosenMember.hasCode();
-            boolean memberWon = combatService.executeCombat(chosenMember, creature, memberHasCode);
-
-            if (memberWon) {
-                logger.log(Level.INFO, "{0} defeated the {1}!",
-                        new Object[] { chosenMember.getName(), creature.getName() });
-            } else {
-                logger.log(Level.INFO, "{0} was defeated by the {1}.",
-                        new Object[] { chosenMember.getName(), creature.getName() });
-            }
-            return memberWon;
-        }
-        return false; // No encounter to handle
-    }
-
     private Creature createRandomCreature() {
-        // Create a random creature (Orc, Troll, or Goblin)
+        // Randomly create a creature (Orc, Troll, or Goblin)
         int choice = random.nextInt(3);
         return switch (choice) {
             case 0 -> new Orc();
@@ -123,7 +103,7 @@ public class NavigationService {
     }
 
     private Member selectMemberForFight(Fellowship fellowship) {
-        // Logic to choose which member will fight, e.g., the first member:
+        // Simple strategy to choose the first member for now
         return fellowship.getMembers().get(0); // Example: just return the first member
     }
 

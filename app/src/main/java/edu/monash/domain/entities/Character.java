@@ -8,24 +8,25 @@ package edu.monash.domain.entities;
 public abstract class Character {
     private final String name;
     private final int power;
-    private final int maxHealth; // Maximum health the character can have
-    private int health;
+    private int points;
     private boolean hasCode;
+    private boolean isDead;
 
     /**
      * Constructs a Character with the specified name, power, and health.
      *
-     * @param name      The name of the character.
-     * @param power     The power level of the character.
-     * @param health    The initial health points of the character.
-     * @param maxHealth The maximum health points of the character.
+     * @param name    The name of the character.
+     * @param power   The power level of the character.
+     * @param points  The points of the character.
+     * @param hasCode The hasCode of the character.
+     * @param isDead  The isDead of the character.
      */
-    protected Character(String name, int power, int health, int maxHealth) {
+    protected Character(String name, int power) {
         this.name = name;
         this.power = power;
-        this.health = health;
-        this.maxHealth = maxHealth;
+        this.points = 0;
         this.hasCode = false;
+        this.isDead = false;
     }
 
     /**
@@ -46,52 +47,7 @@ public abstract class Character {
         return power;
     }
 
-    /**
-     * Returns the health points of the character.
-     *
-     * @return The health points of the character.
-     */
-    public int getHealth() {
-        return health;
-    }
-
-    /**
-     * Returns the maximum health points of the character.
-     *
-     * @return The maximum health points of the character.
-     */
-    public int getMaxHealth() {
-        return maxHealth;
-    }
-
-    /**
-     * Sets the health points of the character.
-     *
-     * @param health The health points to set.
-     */
-    public void setHealth(int health) {
-        this.health = health;
-    }
-
-    /**
-     * Reduces the character's health by the specified damage.
-     *
-     * @param damage The amount of damage to inflict on the character.
-     */
-    public void takeDamage(int damage) {
-        this.health -= damage;
-        if (damage < 0 && this.health > this.maxHealth) {
-            this.health = this.maxHealth; // Ensure health does not exceed maximum
-        } else if (this.health < 0) {
-            this.health = 0; // Ensure health does not drop below zero
-        }
-    }
-
-    public boolean isAlive() {
-        return health > 0;
-    }
-
-    public boolean hasCode() {
+    public boolean getHasCode() {
         return hasCode;
     }
 
@@ -99,12 +55,19 @@ public abstract class Character {
         this.hasCode = hasCode;
     }
 
-    /**
-     * Abstract method to be implemented by subclasses, representing an attack
-     * action.
-     *
-     * @param target The character being attacked.
-     * @return True if the attack was successful, false otherwise.
-     */
-    public abstract boolean attack(Character target);
+    public int getDamagePoints() {
+        return points;
+    }
+
+    public void setDamagePoints(int points) {
+        this.points = points;
+    }
+
+    public boolean getIsDead() {
+        return isDead;
+    }
+
+    public void setIsDead(boolean isDead) {
+        this.isDead = isDead;
+    }
 }

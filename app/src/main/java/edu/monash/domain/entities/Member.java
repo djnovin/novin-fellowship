@@ -5,29 +5,15 @@ package edu.monash.domain.entities;
  * This is the base class for all member types, such as Hobbit, Elf, and Dwarf.
  */
 public abstract class Member extends Character {
-
     /**
      * Constructs a Member with the specified name, power, and health.
      *
-     * @param name      The name of the member.
-     * @param power     The power level of the member.
-     * @param health    The health points of the member.
-     * @param maxHealth The maximum health points of the member.
+     * @param name  The name of the member.
+     * @param power The power level of the member.
      */
-    protected Member(String name, int power, int health, int maxHealth) {
-        super(name, power, health, maxHealth);
+    protected Member(String name, int power) {
+        super(name, power);
     }
-
-    /**
-     * Abstract method to perform an attack on a target.
-     * Each subclass of Member will implement its own attack behavior.
-     *
-     * @param target The character being attacked (could be another member or
-     *               creature).
-     * @return True if the attack was successful, false otherwise.
-     */
-    @Override
-    public abstract boolean attack(Character target);
 
     /**
      * Abstract method to check if the member has a special weapon.
@@ -42,4 +28,15 @@ public abstract class Member extends Character {
      * Subclasses that have special weapons will implement this method.
      */
     public abstract void useSpecialWeapon();
+
+    /**
+     * Recover points when no aggressive creatures are present.
+     */
+    public void recoverPoints() {
+        if (getDamagePoints() > 0) {
+            int damagePoints = getDamagePoints();
+            damagePoints -= 1;
+            setDamagePoints(damagePoints);
+        }
+    }
 }
