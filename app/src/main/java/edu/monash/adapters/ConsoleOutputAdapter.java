@@ -1,4 +1,4 @@
-package edu.monash.adapters.presenters;
+package edu.monash.adapters;
 
 public class ConsoleOutputAdapter {
 

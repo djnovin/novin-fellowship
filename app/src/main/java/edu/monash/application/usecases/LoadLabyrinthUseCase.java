@@ -7,7 +7,8 @@ import edu.monash.infrastructure.repositories.LabyrinthRepository;
 
 /**
  * Use case for loading a Labyrinth.
- * This class is part of the application layer and coordinates the process of loading a labyrinth.
+ * This class is part of the application layer and coordinates the process of
+ * loading a labyrinth.
  */
 public class LoadLabyrinthUseCase {
     private final LabyrinthRepository labyrinthRepository;
@@ -15,7 +16,8 @@ public class LoadLabyrinthUseCase {
     /**
      * Constructs a LoadLabyrinthUseCase with the provided LabyrinthRepository.
      *
-     * @param labyrinthRepository The repository responsible for loading the labyrinth.
+     * @param labyrinthRepository The repository responsible for loading the
+     *                            labyrinth.
      */
     public LoadLabyrinthUseCase(LabyrinthRepository labyrinthRepository) {
         this.labyrinthRepository = labyrinthRepository;
